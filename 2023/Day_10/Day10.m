@@ -2,38 +2,181 @@ clc
 close all
 clearvars
 
-rawdata = readlines( 'example1.txt' );
+rawdata = readlines( 'day10_data.txt' );
 rawdata = char( rawdata );
-
 
 data = parseData( rawdata );
 
-
 [M, N] = size( data );
-isLoopMatrix = logical( zeros( M, N ) );
-for ii = 1:M
-    for jj = 1:N
-        elem = data( ii, jj );
-        
-        if elem ~= 88 && elem ~= 99
-            neighbourInds = findNeighbours( ii, jj, M, N );
-            neighbours = [];
-            for nn = 1:size( neighbourInds, 1 )
-                neigRow = neighbourInds( nn, 1 );
-                neigCol = neighbourInds( nn, 2 );
-                neighbours( end+1 ) = data( neigRow, neigCol );     
-            end
+[iStart, jStart] =  find( data == Inf )
+nextTile = NaN;
 
-            isInLoop = loopCheck( elem, ii, jj, data )
-            
-            if isInLoop
-                isLoopMatrix( ii, jj ) = 1
-                pause
-            % else
-            %     data( ii, jj ) = 0;
-            end  
+[loopTileInds, loopMatrix] = findLoopInds( iStart, jStart, data );
+    
+loopTileInds( :, 3 ) = loopTileInds( :, 3 ) - 1;
+
+farthest = ceil( loopTileInds( end, 3 )/2 )
+solvedPath = loopMatrix.*data
+solvedPath( loopTileInds( 1, 1 ), loopTileInds( 1, 2 ) ) = -10;
+imagesc( solvedPath )
+
+function [ loopTileInds, loopMatrix ] = findLoopInds( row, col, data )
+
+    firstStep = determineFirstStep( row, col, data );
+
+    loopTileInds = [ row, col, 1 ];
+    loopMatrix = logical( zeros( size( data ) ) );
+    loopMatrix( row, col ) = true;
+   % loopMatrix( firstStep(1), firstStep(2) ) = true
+
+    tileNumber = 1;
+    elem = data( firstStep(1), firstStep(2) );
+
+    oldRow = row;
+    oldCol = col;
+    nextRow = firstStep(1);
+    nextCol = firstStep(2);
+    while true   
+
+        if elem == 13
+            tileNumber = tileNumber + 1;
+            loopTileInds( end+1, : ) = [ nextRow, nextCol, tileNumber ];
+            loopMatrix( nextRow, nextCol ) = true;
+            if nextRow < oldRow
+                oldRow = nextRow;
+                nextRow = nextRow - 1;
+                nextCol = oldCol;
+                oldCol = nextCol;
+                elem = data( nextRow, nextCol );
+            else
+                oldRow = nextRow;
+                nextRow = nextRow + 1;
+                nextCol = oldCol;
+                oldCol = nextCol;
+                elem = data( nextRow, nextCol );
+            end
+%pause
+
+        elseif elem == 42
+            tileNumber = tileNumber + 1;
+            loopTileInds( end+1, : ) = [ nextRow, nextCol, tileNumber ];
+            loopMatrix( nextRow, nextCol ) = true;
+            if nextCol < oldCol
+                oldCol = nextCol;
+                nextCol = nextCol - 1;
+                nextRow = oldRow;
+                elem = data( nextRow, nextCol );
+            else
+                oldCol = nextCol;
+                nextCol = nextCol + 1;
+                nextRow = oldRow;
+                oldRow = nextRow;
+                elem = data( oldRow, nextCol );
+            end
+%pause
+        elseif elem == 12
+            tileNumber = tileNumber + 1;
+            loopTileInds( end+1, : ) = [ nextRow, nextCol, tileNumber ];
+            loopMatrix( nextRow, nextCol ) = true;
+            if nextRow > oldRow
+                oldRow = nextRow;
+                nextCol = oldCol + 1;
+                elem = data( nextRow, nextCol );
+            else
+                oldRow = nextRow;
+                nextRow = oldRow - 1;
+                oldCol = nextCol;
+                nextCol = oldCol;
+                elem = data( nextRow, nextCol );
+            end
+%pause
+        elseif elem == 14
+            tileNumber = tileNumber + 1;
+            loopTileInds( end+1, : ) = [ nextRow, nextCol, tileNumber ];
+            loopMatrix( nextRow, nextCol ) = true;
+            if nextRow > oldRow
+                oldCol = nextCol;
+                nextCol = nextCol - 1;
+                oldRow = nextRow;
+                nextRow = oldRow;
+                elem = data( nextRow, nextCol );
+            else
+                oldRow = nextRow;
+                nextRow = nextRow - 1;
+                oldCol = nextCol;
+                nextCol = oldCol;
+                elem = data( nextRow, nextCol );
+            end
+%pause
+        elseif elem == 34
+            tileNumber = tileNumber + 1;
+            loopTileInds( end+1, : ) = [ nextRow, nextCol, tileNumber ];
+            loopMatrix( nextRow, nextCol ) = true;
+            if nextRow < oldRow
+                oldCol = nextCol;
+                nextCol = nextCol - 1;
+                oldRow = nextRow;
+                %nextRow = oldRow
+                elem = data( nextRow, nextCol );
+            else
+                oldRow = nextRow;
+                nextRow = nextRow + 1;
+                oldCol = nextCol;
+                nextCol = oldCol;
+                elem = data( nextRow, nextCol );
+            end
+%pause
+        elseif elem == 32
+            tileNumber = tileNumber + 1;
+            loopTileInds( end+1, : ) = [ nextRow, nextCol, tileNumber ];
+            loopMatrix( nextRow, nextCol ) = true;
+            if nextRow < oldRow
+                oldCol = nextCol;
+                nextCol = nextCol + 1;
+                oldRow = nextRow;
+                nextRow = oldRow;
+                elem = data( nextRow, nextCol );
+            else
+                oldRow = nextRow;
+                nextRow = oldRow + 1;
+                oldCol = nextCol   ;    
+                nextCol = oldCol;
+                elem = data( nextRow, nextCol );
+            end
+%pause
+        elseif elem == Inf
+            break
         end
+
     end
+end
+
+
+function firstStep = determineFirstStep( row, col, data )
+    
+    if row < size( data, 1 )
+        top = data( row-1, col );
+    end
+    if row > 1
+        bottom = data( row+1, col );
+    end
+    if col > 1
+        left = data( row, col-1 );
+    end
+    if col < size( data, 2 )
+        right = data( row, col+1 );
+    end
+
+    if top == 13 || top == 34 || top == 32
+        firstStep = [ row-1, col ];
+    elseif bottom == 13 || bottom == 12 || bottom == 14
+        firstStep = [ row+1, col ];
+    elseif left == 42 || left == 12 || left == 32
+        firstStep = [ row, col+1 ];
+    else
+        firstStep = [ row, col-1 ];
+    end
+
 end
 
 
@@ -164,7 +307,7 @@ function data = parseData( rawdata )
         for jj = 1:N
             elem = rawdata( ii, jj );
             if elem == 'S'
-                data( ii, jj ) = 99;
+                data( ii, jj ) = Inf;
             elseif elem == '|'
                 data( ii, jj ) = 13;
                 
@@ -184,7 +327,7 @@ function data = parseData( rawdata )
                 data( ii, jj ) = 32;
     
             elseif elem == '.'
-                data( ii, jj ) = 88;
+                data( ii, jj ) = 0;
             end
         end
     end
