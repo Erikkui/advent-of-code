@@ -8,4 +8,4 @@ temp/
 .MATLABDriveTag*
 
 # ignore all .txt files with "input" in their name
-*input*
+*input*.txt
