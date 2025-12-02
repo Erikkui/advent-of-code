@@ -6,3 +6,6 @@ temp/
 
 # ignore ALL MATLAB Drive files
 .MATLABDriveTag*
+
+# ignore all .txt files with "input" in their name
+*input*
