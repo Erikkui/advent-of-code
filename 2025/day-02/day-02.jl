@@ -24,24 +24,19 @@ function check_id_range( range )
     range_end = range.stop
 
     number = range_start
-    while true
-        if number > range_end
-            break
+    for number in range
+        digits_array = digits( number ) |> reverse
+        digits_half_ind = Int( length( digits_array ) / 2 )
+        second_half = digits_array[ digits_half_ind+1:end ]
+        if second_half[1] == "0"
+            continue
         else
-            digits_array = digits( number ) |> reverse
-            digits_half_ind = Int( length( digits_array ) / 2 )
-            second_half = digits_array[ digits_half_ind+1:end ]
-            if second_half[1] == "0"
-                continue
-            else
-                test_number = vcat( second_half, second_half ) |> join
-                test_number = parse( Int, test_number )
-                if test_number in range && !( test_number in invalid_ids )
-                    push!( invalid_ids, test_number )
-                end
+            test_number = vcat( second_half, second_half ) |> join
+            test_number = parse( Int, test_number )
+            if test_number in range && !( test_number in invalid_ids )
+                push!( invalid_ids, test_number )
             end
         end
-        number += 1
     end
 
     return sum( invalid_ids )
