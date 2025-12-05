@@ -1,5 +1,3 @@
-using ProgressBars
-
 function read_txt(path)
     open(path, "r") do f
     rawdata = readlines(f)
@@ -58,7 +56,7 @@ function gold()
     flag = false
     while flag == false
         flag = true
-        for (ii, range) in ProgressBar( enumerate( ranges ) )
+        for (ii, range) in enumerate( ranges )
             for (jj, rangeesus) in enumerate( ranges_aux[ ii+1:end ] )
                 if range[2] < rangeesus[1] || range[1] > rangeesus[2] # Range is outside comparison range
                     continue
