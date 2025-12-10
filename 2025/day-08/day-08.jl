@@ -95,65 +95,109 @@ end
 # silver()
 
 
+function connect_all( dists_all, ind_starts, ind_ends )
+    sorted_dist_inds = sortperm( dists_all )
+    unique_boxes = unique( ind_starts )
+    ii = 1
+    connections = Matrix{Int}( undef, 2, 0 )
+    wanted_pair = nothing
+    shortest_loop = false
+    all_visited = false
+    asdfg = false
+    stop_search = false
+    while !(stop_search)
+        min_ind = sorted_dist_inds[ii]
+        start = ind_starts[ min_ind ]
+        finish = ind_ends[ min_ind ]
+        connections = hcat( connections, [ start; finish ] )
+        unique_connected = unique( connections[:] )
 
-# function check_cycle( mapmat, start )
-#     visited = similar( mapmat )
-#     visited[ start ] = 1
-#     while true
-#         next .+= [ 0, 1 ]
-#         if mapmat[ next ] == 1
+        queue = Vector{Int}( undef, 0 )
+        visited = similar( queue )
+        append!( visited, start, finish )
 
-#     end
+        to_visit_1 = findall( isequal(start), connections[1, 1:end-1] )
+        to_visit_1 = connections[ 2, to_visit_1 ]
 
-# end
+        to_visit_2 = findall( isequal(start), connections[2, 1:end-1] )
+        to_visit_2 = connections[ 1, to_visit_2 ]
+        union!( queue, to_visit_1..., to_visit_2... )
 
-# function connect_all( dists_all, dists_inds )
-#     N_dists = length( dists_all[1] )
+        while !(isempty( queue ) )
+            next = queue[1]
+            deleteat!( queue, 1 )
+            push!( visited, next )
 
-#     D = vcat( dists_all... )
-#     sorted_inds = sortperm(D)
+            to_visit_1 = findall( isequal(next), connections[1, 1:end-1] )
+            to_visit_2 = findall( isequal(next), connections[2, 1:end-1] )
 
-#     circuit_starts = [ repeat( [ind], N_dists + 1 - ind ) for ind in 1:N_dists ]
-#     circuit_starts = vcat( circuit_starts... )
+            to_visit_1 = connections[ 2, to_visit_1 ]
+            to_visit_2 = connections[ 1, to_visit_2 ]
 
-#     dist_inds = vcat( dists_inds... )
+            queue = union( to_visit_1, to_visit_2, queue )
+            # println(queue)
+            setdiff!( queue, visited )
+            if finish in to_visit_1 || finish in to_visit_2
+                shortest_loop = true
+            end
 
-#     print_inds = sorted_inds[ end-15:end ]
-#     println( D[print_inds], "\n", circuit_starts[print_inds], "\n", dist_inds[print_inds] )
+            if issetequal( visited, unique_connected )
+                all_visited = true
+            end
 
-#     answer_inds = [0, 0]
-#     mapmat = zeros( Int, N_dists+1, N_dists+1 )
-#     start = [ circuit_starts[sorted_inds[1]], dist_inds[sorted_inds[1]] ]
-#     connects = Matrix{Int}(undef, 2, 0 )
-#     for ii in eachindex(D)
-#         ind = sorted_inds[ii]
-#         start = circuit_starts[ind]
-#         eend =  dist_inds[ind]
-#         connects = hcat( connects, [start; eend] )
-#         if
-#     end
+            if issetequal( unique_connected, unique_boxes )
+                asdfg = true
+            end
 
-#     return answer_inds
-# end
+            if shortest_loop && all_visited && asdfg
+                stop_search = true
+                wanted_pair = [start, finish]
+                break
+            else
+                shortest_loop = false
+                all_visited = false
+                asdg = false
+            end
+        end
+        ii += 1
+    end
+    println(ii)
+    return wanted_pair
+end
 
-# function gold()
-#     path = "2025/day-08/test_input.txt"
-#     rawdata = read_txt( path )
-#     coords = parse_input( rawdata )
+function gold()
+    path = "2025/day-08/input.txt"
+    rawdata = read_txt( path )
+    coords = parse_input( rawdata )
 
-#     n_coords = size( coords, 1 )
-#     dists_all = Vector{ Vector{Int} }( undef, n_coords )
-#     dists_inds = Vector{ Vector{Int} }( undef, n_coords )
-#     for (ii, point) in enumerate( eachrow(coords) )
-#         points_temp = @view coords[ ii+1:end, : ]
-#         dists_ii = [ sum( (point .- point_jj).^2 ) for point_jj in eachrow( points_temp ) ]
-#         dists_all[ii] = dists_ii
-#         dists_inds[ii] = collect( ii+1:size( coords, 1 ) )
-#     end
-#     deleteat!( dists_all, n_coords )
-#     deleteat!( dists_inds, n_coords )
+    n_coords = size( coords, 1 )
+    dists_all = Vector{ Vector{Int} }( undef, n_coords )
+    ind_ends = Vector{ Vector{Int} }( undef, n_coords )
+    for (ii, point) in enumerate( eachrow(coords) )
+        points_temp = @view coords[ ii+1:end, : ]
+        dists_ii = [ sum( (point .- point_jj).^2 ) for point_jj in eachrow( points_temp ) ]
+        dists_all[ii] = dists_ii
+        ind_ends[ii] = collect( ii+1:size( coords, 1 ) )
+    end
+    deleteat!( dists_all, n_coords )
+    deleteat!( ind_ends, n_coords )
+    ind_starts = [ repeat( [ind], n_coords + 1 - ind ) for ind in 1:n_coords ]
 
-#     connect_all( dists_all, dists_inds )
-# end
+    dists_all = vcat( dists_all... )
+    ind_ends = vcat( ind_ends... )
+    ind_starts = vcat( ind_starts... )
 
-# gold()
+    wanted_pair_inds = connect_all( dists_all, ind_starts, ind_ends )
+    pair = coords[ wanted_pair_inds, : ]
+    answer = prod( pair[:, 1] )
+
+    check = findfirst( isequal( sum( (coords[11, :] .- coords[13, :]).^2 )), dists_all )
+
+    println( check )
+
+    println( wanted_pair_inds )
+    println( pair )
+    println( answer )
+end
+
+gold()

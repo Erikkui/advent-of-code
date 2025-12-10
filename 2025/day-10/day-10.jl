@@ -48,6 +48,7 @@ function silver()
     rawdata = read_txt( path )
     lights, buttons, _ = parse_input( rawdata )
 
+
 end
 
 silver()
