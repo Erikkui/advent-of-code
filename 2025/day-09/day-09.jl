@@ -48,34 +48,34 @@ end
 # silver()
 
 
-function create_tilemap( coords )
-    ncoords = size( coords, 1 )
-    max_x = maximum( coords[:, 1] )
-    max_y = maximum( coords[:, 2] )
-    tilemap = BitArray( undef, max_y, max_x )
-    tilemap[ tilemap .== true ] .= false
-    for ii in 1:ncoords
-        coord1, coord2 = nothing, nothing
-        if ii == ncoords
-            coord1, coord2 = coords[ii, :], coords[1, :]
-        else
-            coord1, coord2 = coords[ii, :], coords[ii+1, :]
-        end
-        direction_x = coord2[1] < coord1[1] ? -1 : 1
-        direction_y = coord2[2] < coord1[2] ? -1 : 1
-        x = coord1[1]:direction_x:coord2[1]
-        y = coord1[2]:direction_y:coord2[2]
-        tilemap[ y, x ] .= true
-    end
+# function create_tilemap( coords )
+#     ncoords = size( coords, 1 )
+#     max_x = maximum( coords[:, 1] )
+#     max_y = maximum( coords[:, 2] )
+#     tilemap = BitArray( undef, max_y, max_x )
+#     tilemap[ tilemap .== true ] .= false
+#     for ii in 1:ncoords
+#         coord1, coord2 = nothing, nothing
+#         if ii == ncoords
+#             coord1, coord2 = coords[ii, :], coords[1, :]
+#         else
+#             coord1, coord2 = coords[ii, :], coords[ii+1, :]
+#         end
+#         direction_x = coord2[1] < coord1[1] ? -1 : 1
+#         direction_y = coord2[2] < coord1[2] ? -1 : 1
+#         x = coord1[1]:direction_x:coord2[1]
+#         y = coord1[2]:direction_y:coord2[2]
+#         tilemap[ y, x ] .= true
+#     end
 
-    return tilemap
-end
+#     return tilemap
+# end
 
 function create_ranges( coords )
     ncoords = size( coords, 1 )
 
-    xranges = Vector{}(undef, 0)
-    yranges = similar( xranges )
+    hor_edges = Dict{Int, Any}()
+    vert_edges = similar( xranges )
     for ii in 1:ncoords
         coord1, coord2 = nothing, nothing
         if ii == ncoords
@@ -87,11 +87,15 @@ function create_ranges( coords )
         direction_y = coord2[2] < coord1[2] ? -1 : 1
         x = coord1[1]:direction_x:coord2[1]
         y = coord1[2]:direction_y:coord2[2]
-        push!( xranges, x )
-        push!( yranges, y )
+        if length(x) == 1
+            vert_edges[ x[1] ] = y
+        else
+            hor_edges[ y[1] ] = x
+        end
+
     end
 
-    return xranges, yranges
+    return hor_edges, vert_edges
 end
 
 
@@ -102,35 +106,50 @@ function gold()
 
     ncoords = size( coords, 1 )
 
-    # Create a map of allowed tiles
-    tilemap = create_tilemap( coords )
-    for ii in eachrow( tilemap )
-        println(ii)
-    end
-
-    max_x = maximum( coords[:, 1] )
-    max_y = maximum( coords[:, 2] )
-    tilemap_compare = BitArray( undef, max_y, max_x )
-    tilemap_compare[ tilemap .== true ] .= false
+    # Find edges of the area
+    hor_edges, vert_edges = create_tilemap( coords )
+    # for ii in eachrow( tilemap )
+    #     println(ii)
+    # end
 
     # Find areas
     areas_all = Vector{Int}( undef, 0 )
     inds_start = similar( areas_all )
     inds_end = similar( areas_all )
+    hor_keys = keys( hor_edges )
+    vert_keys = keys( vert_edges )
     for ii in 1:ncoords
         for jj in ii+1:ncoords
+            is_ok = false
+            rect_edges = Dict{ Int, Any }()
             coord1, coord2 = coords[ii, :], coords[jj, :]
-            area = abs.(coord1 .- coord2) .+ 1
+            coord12 = coords[ [ii, jj], : ]
 
             direction_x = coord2[1] < coord1[1] ? -1 : 1
             direction_y = coord2[2] < coord1[2] ? -1 : 1
-            xcoord = coord1[1]:direction_x:coord2[1]
-            ycoord = coord1[2]:direction_y:coord2[2]
 
-            flag = false
-            tilemap_compare[ ycoord, xcoord ] .== true
+            rect_edges[ y[1] ] = direction_x
+            rect_edges[ y[end] ] = direction_x
+            rect_edges[ x[1] ] = direction_y
+            rect_edges[ x[end] ] = direction_y
 
-            if !(flag)
+            # Check horizontal edges of rectangle
+            needed_keys = intersect( vert_keys, direction_x )
+            if length( needed_keys ) > 0
+                for key in needed_keys
+                    area_edge = vert_keys[ key ]
+
+                end
+
+
+
+            end
+
+
+
+
+            if is_ok
+                area = abs.(coord1 .- coord2) .+ 1
                 area = prod( area )
                 push!( areas_all, area )
                 push!( inds_start, ii )
